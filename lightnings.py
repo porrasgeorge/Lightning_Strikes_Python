@@ -178,10 +178,6 @@ def create_kml_by_amplitude(lightnings_df, info_data):
                 name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
             point.coords = [(row['Longitud'], row['Latitud'])]
             point.description = f'Intensidad: {row["Intensity"]}kA'
-            # point.style.labelstyle.scale = 0
-            # point.style.iconstyle.icon.href = point_iconstyle(
-            #     row["Intensity"])
-            # point.style.iconstyle.color = point_iconcolor(row["Intensity"])
             point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
 
     print("Guardando KML")

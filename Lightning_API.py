@@ -30,9 +30,9 @@ def API_request_save(API_location, API_datetime, lr_ID):
     # Base de datos
     server = '192.168.4.11'
     database = 'LightningStrikes'
-    username = 'sa'
-    password = 'Con3$adm.'
-    cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server +
+    username = 'lightnings'
+    password = 'lightnings'
+    cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER='+server +
                           ';DATABASE='+database+';UID='+username+';PWD=' + password, autocommit=True)
 
     # API key
@@ -80,3 +80,15 @@ API_request_save(geocode_pm, utc_dt_rounded, 2)
 API_request_save(geocode_ni, utc_dt_rounded, 3)
 API_request_save(geocode_hn, utc_dt_rounded, 4)
 API_request_save(geocode_gt, utc_dt_rounded, 5)
+
+## check data from 15 minutes ago
+utc_dt_rounded = (datetime.fromtimestamp(utc_dt_secs_rounded,
+                                         tz=timezone.utc)-timedelta(minutes=30)).strftime("%Y%m%d%H%M")
+logging.info("CR 15 minutes ago: " + str(utc_dt_rounded))
+API_request_save(geocode_cr, utc_dt_rounded, 1)
+
+## check data from 30 minutes ago
+utc_dt_rounded = (datetime.fromtimestamp(utc_dt_secs_rounded,
+                                         tz=timezone.utc)-timedelta(minutes=45)).strftime("%Y%m%d%H%M")
+logging.info("CR 30 minutes ago: " + str(utc_dt_rounded))
+API_request_save(geocode_cr, utc_dt_rounded, 1)
