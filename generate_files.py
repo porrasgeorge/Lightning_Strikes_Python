@@ -5,7 +5,7 @@ cooperatives = {1: 'Coopeguanacaste', 2: 'Coopelesca',
                 3: 'Coopealfaroruiz', 4: 'Coopesantos'}  # , 5: 'Conelectricas', 27: 'America_Central'}
 
 
-test = False
+test = True
 
 if not test:
     delta_day = dt.timedelta(days=1)

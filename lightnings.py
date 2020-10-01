@@ -130,7 +130,30 @@ def create_kml_by_time(lightnings_df, info_data):
                 point = minute_fol.newpoint(
                     name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
                 point.coords = [(row['Longitud'], row['Latitud'])]
-                point.description = f'Intensidad: {row["Intensity"]}kA'
+                point.description = f'''<style>
+.styled-table {{
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 200px;
+}}
+.styled-table tbody tr {{
+    border-bottom: 1px solid #dddddd;
+}}
+.styled-table tbody tr:nth-of-type(even) {{
+    background-color: #e3e3e3;
+}}
+</style>
+<body>
+<TABLE class="styled-table">
+    <TR><TH>Intensidad</TH> <TD>{row["Intensity"]}kA</TD></TR>
+    <TR><TH>Num. sensores</TH> <TD>{row["Sensors_Involved"]} </TD></TR>
+    <TR><TH>Error Eje Mayor</TH> <TD> {row["Error_Mayor"]}km </TD></TR>
+    <TR><TH>Error Eje Menor</TH> <TD>{row["Error_Minor"]}km </TD></TR>
+    <TR><TH>Error Azimut</TH> <TD>{row["Error_Azimuth"]}°</TD></TR>
+</TABLE>
+</body>'''
                 point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
                 
     print("Guardando KML")
@@ -177,7 +200,31 @@ def create_kml_by_amplitude(lightnings_df, info_data):
             point = category_fol.newpoint(
                 name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
             point.coords = [(row['Longitud'], row['Latitud'])]
-            point.description = f'Intensidad: {row["Intensity"]}kA'
+            #point.description = f'Intensidad: {row["Intensity"]}kA'
+            point.description = f'''<style>
+.styled-table {{
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 200px;
+}}
+.styled-table tbody tr {{
+    border-bottom: 1px solid #dddddd;
+}}
+.styled-table tbody tr:nth-of-type(even) {{
+    background-color: #e3e3e3;
+}}
+</style>
+<body>
+<TABLE class="styled-table">
+    <TR><TH>Intensidad</TH> <TD>{row["Intensity"]}kA</TD></TR>
+    <TR><TH>Num. sensores</TH> <TD>{row["Sensors_Involved"]} </TD></TR>
+    <TR><TH>Error Eje Mayor</TH> <TD> {row["Error_Mayor"]}km </TD></TR>
+    <TR><TH>Error Eje Menor</TH> <TD>{row["Error_Minor"]}km </TD></TR>
+    <TR><TH>Error Azimut</TH> <TD>{row["Error_Azimuth"]}°</TD></TR>
+</TABLE>
+</body>'''
             point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
 
     print("Guardando KML")
@@ -206,18 +253,19 @@ def create_csv_by_time(lightnings_df, info_data):
     Path(full_path).mkdir(parents=True, exist_ok=True)
     lightnings_df.to_excel(
         f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}.xlsx', sheet_name="Descargas", index=False)
-    lightnings_df.to_csv(
-        f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}.csv', index=False)
+    # lightnings_df.to_csv(
+    #     f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}.csv', index=False)
 
     print("Listo....\n\n")
 
 
-def create_kml_by_area(lightnings_df):
+def create_kml_by_area(lightnings_df, info_data):
 
     lightnings_df['AVG_Amp'] = lightnings_df['AVG_Amp'] / 1000
     lightnings_df['MAX_Amp'] = lightnings_df['MAX_Amp'] / 1000
 
     max_count = max(lightnings_df.Cantidad)
+    high_factor = 10000.0 / (max_count ** 2)
     count_levels = (max_count //10, (25*max_count)//100, (5*max_count)//10, (7*max_count)//10)
     lightnings_df['Category'] = lightnings_df['Cantidad'].apply(
             lambda x: 4 if x >= count_levels[3] else (3 if x >= count_levels[2] else (
@@ -229,49 +277,54 @@ def create_kml_by_area(lightnings_df):
                     3: f'Entre {count_levels[2]} y {count_levels[3]-1} descargas',
                     4: f'Entre {count_levels[3]} y {max_count} descargas'}
 
+    
     ancho_base = 0.018
+    min_height = 1000
 
     kml = simplekml.Kml()
     kml_style_color4 = simplekml.Style()
     kml_style_color4.linestyle.width = 0
-    kml_style_color4.polystyle.color = '770000ff'
+    kml_style_color4.polystyle.color = 'AA0000ff'
     kml_style_color4.labelstyle.scale = 0
 
     kml_style_color3 = simplekml.Style()
     kml_style_color3.linestyle.width = 0
-    kml_style_color3.polystyle.color = '6614F0FF'
+    kml_style_color3.polystyle.color = 'AA14F0FF'
     kml_style_color3.labelstyle.scale = 0
 
     kml_style_color2 = simplekml.Style()
     kml_style_color2.linestyle.width = 0
-    kml_style_color2.polystyle.color = '55ff0000'
+    kml_style_color2.polystyle.color = 'AAff0000'
     kml_style_color2.labelstyle.scale = 0
 
     kml_style_color1 = simplekml.Style()
     kml_style_color1.linestyle.width = 0
-    kml_style_color1.polystyle.color = '55FFFFFF'
+    kml_style_color1.polystyle.color = 'AAFFFFFF'
     kml_style_color1.labelstyle.scale = 0
 
     kml_style_color0 = simplekml.Style()
     kml_style_color0.linestyle.width = 0
-    kml_style_color0.polystyle.color = '55FF78B4'
+    kml_style_color0.polystyle.color = 'AAFF78B4'
     kml_style_color0.labelstyle.scale = 0
     
-
     unique_categories = lightnings_df.Category.unique()
     for category in unique_categories:
         category_df = lightnings_df[lightnings_df.Category == category]
         category_fol = kml.newfolder(
             name=f'{categories[category]} ({len(category_df)} Areas)')
-            
         for index, row in category_df.iterrows():
-            pol = category_fol.newpolygon(name=f'{int(row["Cantidad"])} descargas')
-            pol.outerboundaryis = [(row['Longitud'] , row['Latitud'] ),
-                                    (row['Longitud'] , row['Latitud'] + ancho_base),
-                                    (row['Longitud'] + ancho_base, row['Latitud'] + ancho_base),
-                                    (row['Longitud'] + ancho_base, row['Latitud'] ),
-                                    (row['Longitud'] , row['Latitud'] )]
+            if info_data['h_3d']:
+                pol_height = high_factor * row["Cantidad"] ** 2 + min_height;
+            else:
+                pol_height = min_height
+            pol = category_fol.newpolygon(name=f'{int(row["Cantidad"])} descargas', extrude = 1 )
+            pol.outerboundaryis = [(row['Longitud'] , row['Latitud'], pol_height ),
+                                    (row['Longitud'] , row['Latitud'] + ancho_base, pol_height),
+                                    (row['Longitud'] + ancho_base, row['Latitud'] + ancho_base, pol_height),
+                                    (row['Longitud'] + ancho_base, row['Latitud'], pol_height ),
+                                    (row['Longitud'] , row['Latitud'], pol_height )]
             pol.description = f'Intensidad Promedio: {row["AVG_Amp"]}kA \nIntensidad Maxima: {row["MAX_Amp"]}kA'
+            pol.altitudemode = simplekml.AltitudeMode.relativetoground
             if row["Category"] == 4:
                 pol.style = kml_style_color4
             elif row["Category"] == 3:
@@ -283,6 +336,9 @@ def create_kml_by_area(lightnings_df):
             else:
                 pol.style = kml_style_color0
 
-    kml.save(f'areas.kml')
+    print("Guardando KML")
+    full_path = f'{info_data["base_path"]}\\mensual'
+    Path(full_path).mkdir(parents=True, exist_ok=True)
+    kml.save(
+        f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%m-%B")}.kml')
     print("Listo....\n\n")
-
