@@ -80,14 +80,18 @@ def point_iconcolor(value):
 def kml_point_styles():
     kml_styles = []
     for i in range(0, 9):
+        ballon_color = point_iconcolor(i)
+        icon_color = simplekml.Color.changealpha('99', ballon_color)
         kml_style_pos = simplekml.Style()
         kml_style_neg = simplekml.Style()
         kml_style_pos.labelstyle.scale = 0
         kml_style_neg.labelstyle.scale = 0
         kml_style_pos.iconstyle.icon.href = 'http://maps.google.com/mapfiles/kml/paddle/wht-circle.png'
         kml_style_neg.iconstyle.icon.href = 'http://maps.google.com/mapfiles/kml/paddle/wht-blank.png'
-        kml_style_pos.iconstyle.color = point_iconcolor(i)
-        kml_style_neg.iconstyle.color = point_iconcolor(i)
+        kml_style_pos.iconstyle.color = icon_color
+        kml_style_neg.iconstyle.color = icon_color
+        kml_style_pos.balloonstyle.bgcolor = ballon_color
+        kml_style_neg.balloonstyle.bgcolor = ballon_color
         kml_styles.append([kml_style_neg, kml_style_pos])
     return kml_styles
 
@@ -155,6 +159,7 @@ def create_kml_by_time(lightnings_df, info_data):
 </TABLE>
 </body>'''
                 point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
+                
                 
     print("Guardando KML")
     full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%m-%B")}\\{info_data["cooperative"]}'
@@ -261,6 +266,13 @@ def create_csv_by_time(lightnings_df, info_data):
 
 def create_kml_by_area(lightnings_df, info_data):
 
+    def create_kml_style(style_color):
+        kml_style_color = simplekml.Style()
+        kml_style_color.linestyle.width = 0
+        kml_style_color.polystyle.color = style_color
+        kml_style_color.labelstyle.scale = 0
+        return kml_style_color
+    
     lightnings_df['AVG_Amp'] = lightnings_df['AVG_Amp'] / 1000
     lightnings_df['MAX_Amp'] = lightnings_df['MAX_Amp'] / 1000
 
@@ -277,36 +289,16 @@ def create_kml_by_area(lightnings_df, info_data):
                     3: f'Entre {count_levels[2]} y {count_levels[3]-1} descargas',
                     4: f'Entre {count_levels[3]} y {max_count} descargas'}
 
-    
     ancho_base = 0.018
     min_height = 1000
 
-    kml = simplekml.Kml()
-    kml_style_color4 = simplekml.Style()
-    kml_style_color4.linestyle.width = 0
-    kml_style_color4.polystyle.color = 'AA0000ff'
-    kml_style_color4.labelstyle.scale = 0
-
-    kml_style_color3 = simplekml.Style()
-    kml_style_color3.linestyle.width = 0
-    kml_style_color3.polystyle.color = 'AA14F0FF'
-    kml_style_color3.labelstyle.scale = 0
-
-    kml_style_color2 = simplekml.Style()
-    kml_style_color2.linestyle.width = 0
-    kml_style_color2.polystyle.color = 'AAff0000'
-    kml_style_color2.labelstyle.scale = 0
-
-    kml_style_color1 = simplekml.Style()
-    kml_style_color1.linestyle.width = 0
-    kml_style_color1.polystyle.color = 'AAFFFFFF'
-    kml_style_color1.labelstyle.scale = 0
-
-    kml_style_color0 = simplekml.Style()
-    kml_style_color0.linestyle.width = 0
-    kml_style_color0.polystyle.color = 'AAFF78B4'
-    kml_style_color0.labelstyle.scale = 0
+    kml_style_color4 = create_kml_style('AA0000ff')
+    kml_style_color3 = create_kml_style('AA14F0FF')
+    kml_style_color2 = create_kml_style('AAff0000')
+    kml_style_color1 = create_kml_style('AAFFFFFF')
+    kml_style_color0 = create_kml_style('AAFF78B4')
     
+    kml = simplekml.Kml()
     unique_categories = lightnings_df.Category.unique()
     for category in unique_categories:
         category_df = lightnings_df[lightnings_df.Category == category]
