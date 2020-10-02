@@ -3,6 +3,8 @@ import pyodbc
 import datetime
 import csv
 import pandas as pd
+import numpy as np
+import math
 from pathlib import Path
 
 
@@ -95,6 +97,34 @@ def kml_point_styles():
         kml_styles.append([kml_style_neg, kml_style_pos])
     return kml_styles
 
+
+#######################################################################################################
+#######################################################################################################
+#######################################################################################################
+def ellipse_polygon(longitude, latitude, major_err, minor_err, azimuth):
+
+    a = major_err / 2
+    b = minor_err / 2
+    o = azimuth
+
+    # constants
+    earth_radius = 6373
+    side_number = 72
+    vert_km_to_degrees_ratio = math.degrees(1/earth_radius)
+    hor_km_to_degrees_ratio = vert_km_to_degrees_ratio / abs(math.cos(math.radians(latitude)))
+
+    angle = np.arange(0.0, 2*math.pi, 2*math.pi /side_number)
+    R = a*b/(np.sqrt(np.power(a*np.cos(angle),2)+np.power(b*np.sin(angle),2)))
+    new_angle = angle - math.radians(o)
+
+    x = R * np.cos(new_angle) * hor_km_to_degrees_ratio
+    y = R * np.sin(new_angle) * vert_km_to_degrees_ratio
+
+    ellipse = []
+    for i in range(len(x)):
+        ellipse.append((longitude + x[i], latitude + y[i]))
+
+    return ellipse
 
 #######################################################################################################
 #######################################################################################################
@@ -204,6 +234,10 @@ def create_kml_by_amplitude(lightnings_df, info_data):
         for index, row in category_df.iterrows():
             point = category_fol.newpoint(
                 name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
+            ellipse = category_fol.newpolygon(
+                name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
+            ellipse.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"])
+
             point.coords = [(row['Longitud'], row['Latitud'])]
             #point.description = f'Intensidad: {row["Intensity"]}kA'
             point.description = f'''<style>
@@ -264,6 +298,9 @@ def create_csv_by_time(lightnings_df, info_data):
     print("Listo....\n\n")
 
 
+# #######################################################################################################
+# #######################################################################################################
+# #######################################################################################################
 def create_kml_by_area(lightnings_df, info_data):
 
     def create_kml_style(style_color):
@@ -334,3 +371,5 @@ def create_kml_by_area(lightnings_df, info_data):
     kml.save(
         f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%m-%B")}.kml')
     print("Listo....\n\n")
+
+
