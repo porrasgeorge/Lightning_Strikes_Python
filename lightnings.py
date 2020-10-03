@@ -8,17 +8,26 @@ import math
 from pathlib import Path
 
 
+
 #######################################################################################################
 #######################################################################################################
 #######################################################################################################
-def read_lightnings(event_datetime, cooperative, date_period=1):
+def lightnings_db_connection():
     server = '192.168.4.11'
     database = 'LightningStrikes'
     password = 'lightnings'
     username = 'lightnings'
     cnxn = pyodbc.connect(driver='{SQL Server}', host=server, database=database,
                           user=username, password=password, autocommit=True)
+    return cnxn
 
+
+#######################################################################################################
+#######################################################################################################
+#######################################################################################################
+def read_lightnings(event_datetime, cooperative, date_period=1):
+
+    cnxn = lightnings_db_connection()
     sql = f'exec [GetAllLightnings_API] \'{event_datetime}\', \'{cooperative}\', \'{date_period}\''
     try:
         lightnings_df = pd.read_sql_query(sql, cnxn)
@@ -28,17 +37,13 @@ def read_lightnings(event_datetime, cooperative, date_period=1):
     cnxn.close()
     return lightnings_df
 
+
 #######################################################################################################
 #######################################################################################################
 #######################################################################################################
 def lightnings_count_by_area(initial_date, final_date, cooperative):
-    server = '192.168.4.11'
-    database = 'LightningStrikes'
-    password = 'lightnings'
-    username = 'lightnings'
-    cnxn = pyodbc.connect(driver='{SQL Server}', host=server, database=database,
-                          user=username, password=password, autocommit=True)
 
+    cnxn = lightnings_db_connection()
     sql = f'exec [GetLightningsCount_API] \'{initial_date}\', \'{final_date}\', \'{cooperative}\''
     try:
         lightnings_df = pd.read_sql_query(sql, cnxn)
@@ -180,7 +185,7 @@ def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
             if add_error_ellipses:
                 ellipse_fol = minute_fol.newfolder(name='Areas de probabilidad')
             
-            for index, row in mn_df.iterrows():
+            for _, row in mn_df.iterrows():
                 point = minute_fol.newpoint(
                     name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
                 
@@ -270,7 +275,7 @@ def create_kml_by_amplitude(lightnings_df, info_data):
         category_df = lightnings_df[lightnings_df.Category_ABS == category]
         category_fol = kml.newfolder(
             name=f'{categories[category]} ({len(category_df)} descargas)')
-        for index, row in category_df.iterrows():
+        for _, row in category_df.iterrows():
             point = category_fol.newpoint(
                 name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
             point.coords = [(row['Longitud'], row['Latitud'])]
@@ -318,7 +323,7 @@ def create_csv_by_time(lightnings_df, info_data):
 
     lightnings_df = lightnings_df.sort_values(by='Fecha_Hora', ascending=True)
 
-    print(f'{info_data["cooperative"]}: Creando CSV y XLSX')
+    print(f'{info_data["cooperative"]}: Creando XLSX')
     print(f'cantidad de descargas: {len(lightnings_df)}')
 
     full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%m-%B")}\\{info_data["cooperative"]}'
@@ -336,7 +341,13 @@ def create_csv_by_time(lightnings_df, info_data):
 # #######################################################################################################
 # #######################################################################################################
 def create_kml_by_area(lightnings_df, info_data):
-
+    
+    print(f'{info_data["cooperative"]}: creando reporte mensual')
+    print(f'cantidad de grupos: {len(lightnings_df)}')
+    
+    if len(lightnings_df) == 0:
+        return None
+    
     def create_kml_style(style_color):
         kml_style_color = simplekml.Style()
         kml_style_color.linestyle.width = 0
@@ -375,9 +386,9 @@ def create_kml_by_area(lightnings_df, info_data):
         category_df = lightnings_df[lightnings_df.Category == category]
         category_fol = kml.newfolder(
             name=f'{categories[category]} ({len(category_df)} Areas)')
-        for index, row in category_df.iterrows():
+        for _, row in category_df.iterrows():
             if info_data['h_3d']:
-                pol_height = high_factor * row["Cantidad"] ** 2 + min_height;
+                pol_height = high_factor * row["Cantidad"] ** 2 + min_height
             else:
                 pol_height = min_height
             pol = category_fol.newpolygon(name=f'{int(row["Cantidad"])} descargas', extrude = 1 )
