@@ -86,6 +86,8 @@ def kml_point_styles():
         icon_color = simplekml.Color.changealpha('99', ballon_color)
         kml_style_pos = simplekml.Style()
         kml_style_neg = simplekml.Style()
+        kml_style_pol_50 = simplekml.Style()
+        kml_style_pol_99 = simplekml.Style()
         kml_style_pos.labelstyle.scale = 0
         kml_style_neg.labelstyle.scale = 0
         kml_style_pos.iconstyle.icon.href = 'http://maps.google.com/mapfiles/kml/paddle/wht-circle.png'
@@ -94,28 +96,42 @@ def kml_point_styles():
         kml_style_neg.iconstyle.color = icon_color
         kml_style_pos.balloonstyle.bgcolor = ballon_color
         kml_style_neg.balloonstyle.bgcolor = ballon_color
-        kml_styles.append([kml_style_neg, kml_style_pos])
+        kml_style_pol_50.linestyle.width = 3
+        kml_style_pol_50.linestyle.color = icon_color
+        kml_style_pol_99.linestyle.width = 6
+        kml_style_pol_99.linestyle.color = icon_color
+        kml_styles.append([kml_style_neg, kml_style_pos, kml_style_pol_50, kml_style_pol_99])
     return kml_styles
 
 
 #######################################################################################################
 #######################################################################################################
 #######################################################################################################
-def ellipse_polygon(longitude, latitude, major_err, minor_err, azimuth):
+def ellipse_polygon(longitude, latitude, major_err, minor_err, azimuth, probability = 0):
 
-    a = major_err / 2
-    b = minor_err / 2
-    o = azimuth
+    if probability == 0:
+        a = major_err / 2
+        b = minor_err / 2
+    elif probability == 1:
+        a = 1.82 * major_err / 2
+        b = 1.82 * minor_err / 2
+    else:
+        a = 2.57 * major_err / 2
+        b = 2.57 * minor_err / 2
+   
+    ## constants
+    EARTH_RADIUS = 6373
+    NUMBER_SIDES = 72
+    STEP = 2*math.pi/NUMBER_SIDES
 
-    # constants
-    earth_radius = 6373
-    side_number = 72
-    vert_km_to_degrees_ratio = math.degrees(1/earth_radius)
+    ## ratio kn/degrees acording to latitude
+    vert_km_to_degrees_ratio = math.degrees(1/EARTH_RADIUS)
     hor_km_to_degrees_ratio = vert_km_to_degrees_ratio / abs(math.cos(math.radians(latitude)))
 
-    angle = np.arange(0.0, 2*math.pi, 2*math.pi /side_number)
+    ## creating the ellipse
+    angle = np.arange(0.0, 2*math.pi + STEP, STEP)
     R = a*b/(np.sqrt(np.power(a*np.cos(angle),2)+np.power(b*np.sin(angle),2)))
-    new_angle = angle - math.radians(o)
+    new_angle = angle - math.radians(azimuth)
 
     x = R * np.cos(new_angle) * hor_km_to_degrees_ratio
     y = R * np.sin(new_angle) * vert_km_to_degrees_ratio
@@ -129,7 +145,7 @@ def ellipse_polygon(longitude, latitude, major_err, minor_err, azimuth):
 #######################################################################################################
 #######################################################################################################
 #######################################################################################################
-def create_kml_by_time(lightnings_df, info_data):
+def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
     if len(lightnings_df) == 0:
         return None
 
@@ -150,6 +166,7 @@ def create_kml_by_time(lightnings_df, info_data):
     print(f'cantidad de descargas: {len(lightnings_df)}')
 
     kml_styles = kml_point_styles()
+    ellipse_polystyle = simplekml.PolyStyle(fill=0, outline=1)
     kml = simplekml.Kml()
     unique_hours = lightnings_df.Hour.unique()
     for hr in unique_hours:
@@ -160,10 +177,30 @@ def create_kml_by_time(lightnings_df, info_data):
             mn_df = hr_df[hr_df.Minute == mn]
             minute_fol = hour_fol.newfolder(
                 name=f'{hr:02d}:{mn:02d} ({len(mn_df)} descargas)')
+            if add_error_ellipses:
+                ellipse_fol = minute_fol.newfolder(name='Areas de probabilidad')
+            
             for index, row in mn_df.iterrows():
                 point = minute_fol.newpoint(
                     name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
+                
+                if add_error_ellipses:
+                    ellipse_50 = ellipse_fol.newpolygon(
+                        name=f'{row["Fecha_Hora"].strftime("%Y/%m/%d %H:%M:%S")} 50%')
+                    ellipse_50.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"])
+                    ellipse_50.style = kml_styles[row["Category_ABS"]][2]
+                    ellipse_50.polystyle = ellipse_polystyle
+                    ellipse_50.visibility = 0
+
+                    ellipse_99 = ellipse_fol.newpolygon(
+                        name=f'{row["Fecha_Hora"].strftime("%Y/%m/%d %H:%M:%S")} 99%')
+                    ellipse_99.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"], probability = 2)
+                    ellipse_99.style = kml_styles[row["Category_ABS"]][3]
+                    ellipse_99.polystyle = ellipse_polystyle
+                    ellipse_99.visibility = 0
+                
                 point.coords = [(row['Longitud'], row['Latitud'])]
+                point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
                 point.description = f'''<style>
 .styled-table {{
     border-collapse: collapse;
@@ -188,14 +225,16 @@ def create_kml_by_time(lightnings_df, info_data):
     <TR><TH>Error Azimut</TH> <TD>{row["Error_Azimuth"]}°</TD></TR>
 </TABLE>
 </body>'''
-                point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
-                
                 
     print("Guardando KML")
     full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%m-%B")}\\{info_data["cooperative"]}'
     Path(full_path).mkdir(parents=True, exist_ok=True)
-    kml.save(
-        f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_byDate.kml')
+    if add_error_ellipses:
+        kml.save(
+            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_porFecha (Elipses).kml')
+    else:
+        kml.save(
+            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_porFecha.kml')
     print("Listo....\n\n")
 
 
@@ -234,12 +273,8 @@ def create_kml_by_amplitude(lightnings_df, info_data):
         for index, row in category_df.iterrows():
             point = category_fol.newpoint(
                 name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
-            ellipse = category_fol.newpolygon(
-                name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
-            ellipse.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"])
-
             point.coords = [(row['Longitud'], row['Latitud'])]
-            #point.description = f'Intensidad: {row["Intensity"]}kA'
+            point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
             point.description = f'''<style>
 .styled-table {{
     border-collapse: collapse;
@@ -264,14 +299,13 @@ def create_kml_by_amplitude(lightnings_df, info_data):
     <TR><TH>Error Azimut</TH> <TD>{row["Error_Azimuth"]}°</TD></TR>
 </TABLE>
 </body>'''
-            point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
 
     print("Guardando KML")
 
     full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%m-%B")}\\{info_data["cooperative"]}'
     Path(full_path).mkdir(parents=True, exist_ok=True)
     kml.save(
-        f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_byAmplitude.kml')
+        f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_por_Amplitud.kml')
     print("Listo....\n\n")
 
 
