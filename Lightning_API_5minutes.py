@@ -5,6 +5,7 @@ import requests
 import json
 import pyodbc
 import logging
+import lightnings as light
 
 
 log_filename = f'logs\\datalog_{datetime.now().strftime("%Y_%m")}_5min.log'
@@ -28,9 +29,9 @@ def API_request_save(API_location, API_datetime, lr_ID):
     # Base de datos
     server = '192.168.4.11'
     database = 'LightningStrikes'
-    username = 'sa'
-    password = 'Con3$adm.'
-    cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server +
+    username = 'lightnings'
+    password = 'lightnings'
+    cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER='+server +
                           ';DATABASE='+database+';UID='+username+';PWD=' + password, autocommit=True)
 
     # API key
@@ -70,7 +71,8 @@ def API_request_save(API_location, API_datetime, lr_ID):
     # Close Connection
     cnxn.close()
 
-
 logging.info("Fecha y Hora de los datos: " + str(utc_dt_rounded))
-
 API_request_save(geocode_cr, utc_dt_rounded, 1)
+
+
+light.create_kml_live_data()

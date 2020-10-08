@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import math
 from pathlib import Path
-
+from dateutil import tz
 
 
 #######################################################################################################
@@ -196,16 +196,19 @@ def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
                     ellipse_50.style = kml_styles[row["Category_ABS"]][2]
                     ellipse_50.polystyle = ellipse_polystyle
                     ellipse_50.visibility = 0
+                    ellipse_50.timestamp.when = row['Fecha_Hora'].replace(second=0, microsecond=0).isoformat()
+                    ##ellipse_50.timespan.end = (row['Fecha_Hora']+datetime.timedelta(minutes=30)).isoformat()
 
-                    ellipse_99 = ellipse_fol.newpolygon(
-                        name=f'{row["Fecha_Hora"].strftime("%Y/%m/%d %H:%M:%S")} 99%')
-                    ellipse_99.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"], probability = 2)
-                    ellipse_99.style = kml_styles[row["Category_ABS"]][3]
-                    ellipse_99.polystyle = ellipse_polystyle
-                    ellipse_99.visibility = 0
+                    # ellipse_99 = ellipse_fol.newpolygon(
+                    #     name=f'{row["Fecha_Hora"].strftime("%Y/%m/%d %H:%M:%S")} 99%')
+                    # ellipse_99.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"], probability = 2)
+                    # ellipse_99.style = kml_styles[row["Category_ABS"]][3]
+                    # ellipse_99.polystyle = ellipse_polystyle
+                    # ellipse_99.visibility = 0
                 
                 point.coords = [(row['Longitud'], row['Latitud'])]
                 point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
+                point.timestamp.when = row['Fecha_Hora'].replace(second=0, microsecond=0).isoformat()
                 point.description = f'''<style>
 .styled-table {{
     border-collapse: collapse;
@@ -337,9 +340,9 @@ def create_csv_by_time(lightnings_df, info_data):
     print("Listo....\n\n")
 
 
-# #######################################################################################################
-# #######################################################################################################
-# #######################################################################################################
+#######################################################################################################
+#######################################################################################################
+#######################################################################################################
 def create_kml_by_area(lightnings_df, info_data):
     
     print(f'{info_data["cooperative"]}: creando reporte mensual')
@@ -417,4 +420,101 @@ def create_kml_by_area(lightnings_df, info_data):
         f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%m-%B")}.kml')
     print("Listo....\n\n")
 
+#######################################################################################################
+#######################################################################################################
+#######################################################################################################
+def create_kml_live_data():
+    def kml_create(lightnings_df):
+        kml_style_red = simplekml.Style()
+        kml_style_red.iconstyle.icon.href = 'icons/bolt.png'
+        kml_style_red.iconstyle.scale = 2
+        kml_style_red.labelstyle.scale = 0
+        kml_style_red.iconstyle.color = simplekml.Color.red
+        kml_style_yellow = simplekml.Style()
+        kml_style_yellow.iconstyle.icon.href = 'icons/bolt.png'
+        kml_style_yellow.iconstyle.scale = 1.5
+        kml_style_yellow.labelstyle.scale = 0
+        kml_style_yellow.iconstyle.color = simplekml.Color.yellow
+        kml_style_highlighted = simplekml.Style()
+        kml_style_highlighted.iconstyle.icon.href = 'icons/bolt.png'
+        kml_style_highlighted.iconstyle.scale = 2.5
+        kml_style_highlighted.labelstyle.scale = 1.5
+        kml_style_highlighted.iconstyle.color = simplekml.Color.orange
+        ellipse_style = simplekml.Style()
+        ellipse_style.linestyle.width = 3
+        ellipse_style.linestyle.color = simplekml.Color.orange
+        ellipse_style.polystyle.fill = 0
+        ellipse_style.polystyle.outline = 1
 
+        kml = simplekml.Kml()
+        with_timestamp = (max(lightnings_df.Fecha_Hora) - min(lightnings_df.Fecha_Hora)) > datetime.timedelta(minutes=60)
+        
+        for _, row in lightnings_df.iterrows():
+            point = kml.newpoint(
+                name=row['Fecha_Hora'].strftime("%H:%M"))
+            ellipse = kml.newpolygon()
+            point.coords = [(row['Longitud'], row['Latitud'])]
+            point.stylemap.highlightstyle = kml_style_highlighted
+            if row['Category']:
+                point.stylemap.normalstyle = kml_style_red
+            else:
+                point.stylemap.normalstyle = kml_style_yellow    
+            if with_timestamp:
+                point.timestamp.when = row['Fecha_Hora'].replace(second=0, microsecond=0).isoformat()
+                ellipse.timestamp.when = row['Fecha_Hora'].replace(second=0, microsecond=0).isoformat()
+                
+            point.description = f'''<style>
+                .styled-table {{
+                    border-collapse: collapse;
+                    margin: 25px 0;
+                    font-size: 0.9em;
+                    font-family: sans-serif;
+                    min-width: 200px;
+                }}
+                .styled-table tbody tr {{
+                    border-bottom: 1px solid #dddddd;
+                }}
+                </style>
+                <body>
+                <TABLE class="styled-table">
+                    <TR><TH>Hora</TH> <TD>{row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S")}</TD></TR>
+                    <TR><TH>Intensidad</TH> <TD>{row["Intensity"]}kA</TD></TR>
+                    <TR><TH>Num. sensores</TH> <TD>{row["Sensors_Involved"]} </TD></TR>
+                </TABLE>
+                </body>'''
+
+            ellipse.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"], probability = 2)
+            ellipse.style = ellipse_style
+
+        return kml
+
+    delta_time_report1 = datetime.timedelta(hours=4)
+    delta_time_report2 = datetime.timedelta(minutes=30)
+    end_date = datetime.datetime.now().replace(second=0, microsecond=0)
+    initial_date_report1 = end_date - delta_time_report1
+    initial_date_report2 = end_date - delta_time_report2
+
+    full_path = f'\\\\192.168.3.233\\Public\\Lightnings'
+    coop_id = 5
+    
+    lightnings_df = read_lightnings(initial_date_report1, coop_id)
+    
+    if len(lightnings_df) == 0:
+        return None
+
+    print(f'descargas: {len(lightnings_df)}')
+
+    lightnings_df = lightnings_df.sort_values(by='Fecha_Hora', ascending=True)
+    lightnings_df['Intensity'] = lightnings_df['Intensity'] / 1000
+    lightnings_df2 = lightnings_df[lightnings_df['Fecha_Hora'] >= initial_date_report2].copy(deep=True)
+    lightnings_df['Category'] = (end_date - lightnings_df['Fecha_Hora']) <= datetime.timedelta(minutes=30)
+    lightnings_df2['Category'] = (end_date - lightnings_df2['Fecha_Hora']) <= datetime.timedelta(minutes=10)
+
+    kml = kml_create(lightnings_df)
+    kml2 = kml_create(lightnings_df2)
+    print("Guardando KMLs")
+    Path(full_path).mkdir(parents=True, exist_ok=True)
+    kml.save(f'{full_path}\\Conelectricas_4hours.kml')
+    kml2.save(f'{full_path}\\Conelectricas_30minutes.kml')
+    print("Listo....\n\n")
+  
