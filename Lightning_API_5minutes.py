@@ -26,13 +26,8 @@ print(utc_dt_rounded)
 
 
 def API_request_save(API_location, API_datetime, lr_ID):
-    # Base de datos
-    server = '192.168.4.11'
-    database = 'LightningStrikes'
-    username = 'lightnings'
-    password = 'lightnings'
-    cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER='+server +
-                          ';DATABASE='+database+';UID='+username+';PWD=' + password, autocommit=True)
+    # DB conection
+    cnxn = light.lightnings_db_connection()
 
     # API key
     apiKey = 'e3f4b0ed83574135b4b0ed8357b135d4'
@@ -74,5 +69,5 @@ def API_request_save(API_location, API_datetime, lr_ID):
 logging.info("Fecha y Hora de los datos: " + str(utc_dt_rounded))
 API_request_save(geocode_cr, utc_dt_rounded, 1)
 
-
+## Afte savind data, update the kml files on network storage
 light.create_kml_live_data()

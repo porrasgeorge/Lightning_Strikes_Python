@@ -5,7 +5,7 @@ import requests
 import json
 import pyodbc
 import logging
-
+import lightnings as light
 
 log_filename = f'logs\\datalog_{datetime.now().strftime("%Y_%m")}.log'
 makedirs(path.dirname(log_filename), exist_ok=True)
@@ -27,13 +27,9 @@ utc_dt_rounded = (datetime.fromtimestamp(utc_dt_secs_rounded,
 
 
 def API_request_save(API_location, API_datetime, lr_ID):
-    # Base de datos
-    server = '192.168.4.11'
-    database = 'LightningStrikes'
-    username = 'lightnings'
-    password = 'lightnings'
-    cnxn = pyodbc.connect('DRIVER={SQL Server};SERVER='+server +
-                          ';DATABASE='+database+';UID='+username+';PWD=' + password, autocommit=True)
+
+    # DB conection
+    cnxn = light.lightnings_db_connection()
 
     # API key
     apiKey = 'e3f4b0ed83574135b4b0ed8357b135d4'

@@ -440,28 +440,43 @@ def create_kml_live_data():
         kml_style_highlighted.iconstyle.scale = 2.5
         kml_style_highlighted.labelstyle.scale = 1.5
         kml_style_highlighted.iconstyle.color = simplekml.Color.orange
-        ellipse_style = simplekml.Style()
-        ellipse_style.linestyle.width = 3
-        ellipse_style.linestyle.color = simplekml.Color.orange
-        ellipse_style.polystyle.fill = 0
-        ellipse_style.polystyle.outline = 1
+        ellipse_style_red = simplekml.Style()
+        ellipse_style_red.linestyle.width = 3
+        ellipse_style_red.linestyle.color = simplekml.Color.red
+        ellipse_style_red.polystyle.fill = 0
+        ellipse_style_red.polystyle.outline = 1
+        ellipse_style_yellow = simplekml.Style()
+        ellipse_style_yellow.linestyle.width = 2
+        ellipse_style_yellow.linestyle.color = simplekml.Color.yellow
+        ellipse_style_yellow.polystyle.fill = 0
+        ellipse_style_yellow.polystyle.outline = 1
 
         kml = simplekml.Kml()
+        ellipses_fol = kml.newfolder(name=f'Elipses de error')
         with_timestamp = (max(lightnings_df.Fecha_Hora) - min(lightnings_df.Fecha_Hora)) > datetime.timedelta(minutes=60)
         
         for _, row in lightnings_df.iterrows():
             point = kml.newpoint(
-                name=row['Fecha_Hora'].strftime("%H:%M"))
-            ellipse = kml.newpolygon()
+                name=row['Fecha_Hora'].strftime("%H:%M:%S"))
+            
             point.coords = [(row['Longitud'], row['Latitud'])]
             point.stylemap.highlightstyle = kml_style_highlighted
+            
             if row['Category']:
                 point.stylemap.normalstyle = kml_style_red
             else:
                 point.stylemap.normalstyle = kml_style_yellow    
+            
             if with_timestamp:
                 point.timestamp.when = row['Fecha_Hora'].replace(second=0, microsecond=0).isoformat()
-                ellipse.timestamp.when = row['Fecha_Hora'].replace(second=0, microsecond=0).isoformat()
+            else:
+                ellipse = ellipses_fol.newpolygon(name=row['Fecha_Hora'].strftime("%H:%M:%S"))
+                ellipse.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"], probability = 2)
+                ellipse.visibility = 0
+                if row['Category']:
+                    ellipse.style = ellipse_style_red
+                else:
+                    ellipse.style = ellipse_style_yellow
                 
             point.description = f'''<style>
                 .styled-table {{
@@ -483,9 +498,6 @@ def create_kml_live_data():
                 </TABLE>
                 </body>'''
 
-            ellipse.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"], probability = 2)
-            ellipse.style = ellipse_style
-
         return kml
 
     delta_time_report1 = datetime.timedelta(hours=4)
@@ -498,23 +510,35 @@ def create_kml_live_data():
     coop_id = 5
     
     lightnings_df = read_lightnings(initial_date_report1, coop_id)
-    
-    if len(lightnings_df) == 0:
-        return None
-
     print(f'descargas: {len(lightnings_df)}')
-
-    lightnings_df = lightnings_df.sort_values(by='Fecha_Hora', ascending=True)
-    lightnings_df['Intensity'] = lightnings_df['Intensity'] / 1000
-    lightnings_df2 = lightnings_df[lightnings_df['Fecha_Hora'] >= initial_date_report2].copy(deep=True)
-    lightnings_df['Category'] = (end_date - lightnings_df['Fecha_Hora']) <= datetime.timedelta(minutes=30)
-    lightnings_df2['Category'] = (end_date - lightnings_df2['Fecha_Hora']) <= datetime.timedelta(minutes=10)
-
-    kml = kml_create(lightnings_df)
-    kml2 = kml_create(lightnings_df2)
     print("Guardando KMLs")
-    Path(full_path).mkdir(parents=True, exist_ok=True)
+    if len(lightnings_df) != 0:
+        lightnings_df = lightnings_df.sort_values(by='Fecha_Hora', ascending=True)
+        lightnings_df['Intensity'] = lightnings_df['Intensity'] / 1000
+        lightnings_df['Category'] = (end_date - lightnings_df['Fecha_Hora']) <= datetime.timedelta(minutes=30)
+        kml = kml_create(lightnings_df)
+        Path(full_path).mkdir(parents=True, exist_ok=True)
+    else:
+        kml = simplekml.Kml()
+        point = kml.newpoint(name= f'No hay descargas - {end_date.strftime("%H:%M")}')
+        point.coords = [(-85.5, 10.1)]
+        point.style.iconstyle.icon.href = 'http://maps.google.com/mapfiles/kml/shapes/info.png'
+        point.style.labelstyle.scale = 3
+        point.style.labelstyle.color = simplekml.Color.red
     kml.save(f'{full_path}\\Conelectricas_4hours.kml')
+
+    lightnings_df2 = lightnings_df[lightnings_df['Fecha_Hora'] >= initial_date_report2].copy(deep=True)
+    if len(lightnings_df2) != 0:
+        lightnings_df2['Category'] = (end_date - lightnings_df2['Fecha_Hora']) <= datetime.timedelta(minutes=10)
+        kml2 = kml_create(lightnings_df2)
+    else:
+        kml2 = simplekml.Kml()
+        point = kml2.newpoint(name= f'No hay descargas - {end_date.strftime("%H:%M")}')
+        point.coords = [(-85.5, 10.1)]
+        point.style.iconstyle.icon.href = 'http://maps.google.com/mapfiles/kml/shapes/info.png'
+        point.style.labelstyle.scale = 3
+        point.style.labelstyle.color = simplekml.Color.red
     kml2.save(f'{full_path}\\Conelectricas_30minutes.kml')
+
     print("Listo....\n\n")
   
