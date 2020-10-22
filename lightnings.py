@@ -41,10 +41,10 @@ def read_lightnings(event_datetime, cooperative, date_period=1):
 #######################################################################################################
 #######################################################################################################
 #######################################################################################################
-def lightnings_count_by_area(initial_date, final_date, cooperative):
+def lightnings_count_by_area(initial_date, final_date, cooperative, limited_by_polygon = 1):
 
     cnxn = lightnings_db_connection()
-    sql = f'exec [GetLightningsCount_API] \'{initial_date}\', \'{final_date}\', \'{cooperative}\''
+    sql = f'exec [GetLightningsCount_API] \'{initial_date}\', \'{final_date}\', \'{cooperative}\', \'{limited_by_polygon}\''
     try:
         lightnings_df = pd.read_sql_query(sql, cnxn)
     except pyodbc.Error as err:
@@ -188,27 +188,29 @@ def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
             for _, row in mn_df.iterrows():
                 point = minute_fol.newpoint(
                     name=row['Fecha_Hora'].strftime("%Y/%m/%d %H:%M:%S"))
+                point_timestamp = row['Fecha_Hora'].replace(second=0, microsecond=0).isoformat()
                 
                 if add_error_ellipses:
-                    ellipse_50 = ellipse_fol.newpolygon(
-                        name=f'{row["Fecha_Hora"].strftime("%Y/%m/%d %H:%M:%S")} 50%')
-                    ellipse_50.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"])
-                    ellipse_50.style = kml_styles[row["Category_ABS"]][2]
-                    ellipse_50.polystyle = ellipse_polystyle
-                    ellipse_50.visibility = 0
-                    ellipse_50.timestamp.when = row['Fecha_Hora'].replace(second=0, microsecond=0).isoformat()
+                    # ellipse_50 = ellipse_fol.newpolygon(
+                    #     name=f'{row["Fecha_Hora"].strftime("%Y/%m/%d %H:%M:%S")} 50%')
+                    # ellipse_50.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"])
+                    # ellipse_50.style = kml_styles[row["Category_ABS"]][2]
+                    # ellipse_50.polystyle = ellipse_polystyle
+                    # ellipse_50.visibility = 0
+                    # ellipse_50.timestamp.when = point_timestamp
                     ##ellipse_50.timespan.end = (row['Fecha_Hora']+datetime.timedelta(minutes=30)).isoformat()
 
-                    # ellipse_99 = ellipse_fol.newpolygon(
-                    #     name=f'{row["Fecha_Hora"].strftime("%Y/%m/%d %H:%M:%S")} 99%')
-                    # ellipse_99.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"], probability = 2)
-                    # ellipse_99.style = kml_styles[row["Category_ABS"]][3]
-                    # ellipse_99.polystyle = ellipse_polystyle
-                    # ellipse_99.visibility = 0
+                    ellipse_99 = ellipse_fol.newpolygon(
+                        name=f'{row["Fecha_Hora"].strftime("%Y/%m/%d %H:%M:%S")} 99%')
+                    ellipse_99.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"], probability = 2)
+                    ellipse_99.style = kml_styles[row["Category_ABS"]][3]
+                    ellipse_99.polystyle = ellipse_polystyle
+                    ellipse_99.visibility = 0
+                    ellipse_99.timestamp.when = point_timestamp
                 
                 point.coords = [(row['Longitud'], row['Latitud'])]
                 point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
-                point.timestamp.when = row['Fecha_Hora'].replace(second=0, microsecond=0).isoformat()
+                point.timestamp.when = point_timestamp
                 point.description = f'''<style>
 .styled-table {{
     border-collapse: collapse;
@@ -343,9 +345,9 @@ def create_csv_by_time(lightnings_df, info_data):
 #######################################################################################################
 #######################################################################################################
 #######################################################################################################
-def create_kml_by_area(lightnings_df, info_data):
+def create_kml_by_area(lightnings_df, info_data, file_name_append = ""):
     
-    print(f'{info_data["cooperative"]}: creando reporte mensual')
+    print(f'{info_data["cooperative"]}: creando reporte por area')
     print(f'cantidad de grupos: {len(lightnings_df)}')
     
     if len(lightnings_df) == 0:
@@ -414,10 +416,17 @@ def create_kml_by_area(lightnings_df, info_data):
                 pol.style = kml_style_color0
 
     print("Guardando KML")
-    full_path = f'{info_data["base_path"]}\\mensual'
-    Path(full_path).mkdir(parents=True, exist_ok=True)
-    kml.save(
-        f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%m-%B")}.kml')
+    if (info_data['period'] == 'week'):
+        full_path = f'{info_data["base_path"]}\\semanal'
+        Path(full_path).mkdir(parents=True, exist_ok=True)
+        kml.save(
+            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%Y-%m-%d")}{file_name_append}.kml')
+    else:
+        full_path = f'{info_data["base_path"]}\\mensual'
+        Path(full_path).mkdir(parents=True, exist_ok=True)
+        kml.save(
+            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%Y-%B")}{file_name_append}.kml')
+    
     print("Listo....\n\n")
 
 #######################################################################################################
