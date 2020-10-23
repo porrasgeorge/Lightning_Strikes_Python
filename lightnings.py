@@ -151,6 +151,10 @@ def ellipse_polygon(longitude, latitude, major_err, minor_err, azimuth, probabil
 #######################################################################################################
 #######################################################################################################
 def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
+        
+    lightnings_lenght = len(lightnings_df)
+    light_len_disable = lightnings_lenght > 10000
+    
     if len(lightnings_df) == 0:
         return None
 
@@ -167,8 +171,7 @@ def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
     lightnings_df['Category_dir'] = lightnings_df['Intensity'].apply(
         lambda x: 1 if x >= 0 else 0)
 
-    print(f'{info_data["cooperative"]}: Creando KML por Hora')
-    print(f'cantidad de descargas: {len(lightnings_df)}')
+    print(f'{info_data["cooperative"]}: {len(lightnings_df)} TIME')
 
     kml_styles = kml_point_styles()
     ellipse_polystyle = simplekml.PolyStyle(fill=0, outline=1)
@@ -210,6 +213,8 @@ def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
                 
                 point.coords = [(row['Longitud'], row['Latitud'])]
                 point.style = kml_styles[row["Category_ABS"]][row['Category_dir']]
+                if light_len_disable:
+                    point.visibility = 0
                 point.timestamp.when = point_timestamp
                 point.description = f'''<style>
 .styled-table {{
@@ -236,7 +241,6 @@ def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
 </TABLE>
 </body>'''
                 
-    print("Guardando KML")
     full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%m-%B")}\\{info_data["cooperative"]}'
     Path(full_path).mkdir(parents=True, exist_ok=True)
     if add_error_ellipses:
@@ -245,14 +249,16 @@ def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
     else:
         kml.save(
             f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_porFecha.kml')
-    print("Listo....\n\n")
 
 
 #######################################################################################################
 #######################################################################################################
 #######################################################################################################
 def create_kml_by_amplitude(lightnings_df, info_data):
-    if len(lightnings_df) == 0:
+    
+    lightnings_lenght = len(lightnings_df)
+    
+    if lightnings_lenght == 0:
         return None
 
     lightnings_df['Intensity'] = lightnings_df['Intensity'] / 1000
@@ -270,8 +276,7 @@ def create_kml_by_amplitude(lightnings_df, info_data):
     categories = {0: 'Menos de 20kA', 1: 'Entre 20kA y 40kA', 2: 'Entre 40kA y 60kA', 3: 'Entre 60kA y 80kA',
                   4: 'Entre 80kA y 120kA', 5: 'Entre 120kA y 200kA', 6: 'Entre 200kA y 300kA', 7: 'Mas de 300kA'}
 
-    print(f'{info_data["cooperative"]}: Creando KML por Amplitud')
-    print(f'cantidad de descargas: {len(lightnings_df)}')
+    print(f'{info_data["cooperative"]}: {len(lightnings_df)} AMPLITUDE')
     
     kml_styles = kml_point_styles()
     kml = simplekml.Kml()
@@ -310,13 +315,10 @@ def create_kml_by_amplitude(lightnings_df, info_data):
 </TABLE>
 </body>'''
 
-    print("Guardando KML")
-
     full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%m-%B")}\\{info_data["cooperative"]}'
     Path(full_path).mkdir(parents=True, exist_ok=True)
     kml.save(
         f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_por_Amplitud.kml')
-    print("Listo....\n\n")
 
 
 # #######################################################################################################
@@ -328,8 +330,7 @@ def create_csv_by_time(lightnings_df, info_data):
 
     lightnings_df = lightnings_df.sort_values(by='Fecha_Hora', ascending=True)
 
-    print(f'{info_data["cooperative"]}: Creando XLSX')
-    print(f'cantidad de descargas: {len(lightnings_df)}')
+    print(f'{info_data["cooperative"]}: {len(lightnings_df)} CSV')
 
     full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%m-%B")}\\{info_data["cooperative"]}'
     #path_to_file = "kml"
@@ -339,16 +340,13 @@ def create_csv_by_time(lightnings_df, info_data):
     # lightnings_df.to_csv(
     #     f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}.csv', index=False)
 
-    print("Listo....\n\n")
-
 
 #######################################################################################################
 #######################################################################################################
 #######################################################################################################
 def create_kml_by_area(lightnings_df, info_data, file_name_append = ""):
     
-    print(f'{info_data["cooperative"]}: creando reporte por area')
-    print(f'cantidad de grupos: {len(lightnings_df)}')
+    print(f'{info_data["cooperative"]}: {len(lightnings_df)} AREA')
     
     if len(lightnings_df) == 0:
         return None
@@ -415,7 +413,6 @@ def create_kml_by_area(lightnings_df, info_data, file_name_append = ""):
             else:
                 pol.style = kml_style_color0
 
-    print("Guardando KML")
     if (info_data['period'] == 'week'):
         full_path = f'{info_data["base_path"]}\\semanal'
         Path(full_path).mkdir(parents=True, exist_ok=True)
@@ -426,8 +423,6 @@ def create_kml_by_area(lightnings_df, info_data, file_name_append = ""):
         Path(full_path).mkdir(parents=True, exist_ok=True)
         kml.save(
             f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%Y-%B")}{file_name_append}.kml')
-    
-    print("Listo....\n\n")
 
 #######################################################################################################
 #######################################################################################################
@@ -519,8 +514,7 @@ def create_kml_live_data():
     coop_id = 5
     
     lightnings_df = read_lightnings(initial_date_report1, coop_id)
-    print(f'descargas: {len(lightnings_df)}')
-    print("Guardando KMLs")
+    print(f'descargas: {len(lightnings_df)} LIVE DATA')
     if len(lightnings_df) != 0:
         lightnings_df = lightnings_df.sort_values(by='Fecha_Hora', ascending=True)
         lightnings_df['Intensity'] = lightnings_df['Intensity'] / 1000
@@ -549,5 +543,4 @@ def create_kml_live_data():
         point.style.labelstyle.color = simplekml.Color.red
     kml2.save(f'{full_path}\\Conelectricas_30minutes.kml')
 
-    print("Listo....\n\n")
   
