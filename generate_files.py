@@ -50,7 +50,8 @@ def generate_reports(end_date):
         light.create_kml_by_area(lightnings_df, info_data)
 
         lightnings_df = light.lightnings_count_by_area(initial_date, end_date, coop_id, 0)
-        light.create_kml_by_area(lightnings_df, info_data, "_rectangle")
+        light.create_kml_by_area(lightnings_df, info_data, file_name_append="_rectangle")
+        light.create_kml_by_area(lightnings_df, info_data, by_amp_sum=True, file_name_append="_energia")
 
 
     ######################################################################################
@@ -69,7 +70,8 @@ def generate_reports(end_date):
         light.create_kml_by_area(lightnings_df, info_data)
 
         lightnings_df = light.lightnings_count_by_area(initial_date, end_date, coop_id, 0)
-        light.create_kml_by_area(lightnings_df, info_data, "_rectangle")
+        light.create_kml_by_area(lightnings_df, info_data, file_name_append="_rectangle")
+        light.create_kml_by_area(lightnings_df, info_data, by_amp_sum=True, file_name_append="_energia")
 
 # end_date = dt.date.today()
 # generate_reports(end_date)

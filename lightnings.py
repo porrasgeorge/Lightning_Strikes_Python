@@ -47,6 +47,10 @@ def lightnings_count_by_area(initial_date, final_date, cooperative, limited_by_p
     sql = f'exec [GetLightningsCount_API] \'{initial_date}\', \'{final_date}\', \'{cooperative}\', \'{limited_by_polygon}\''
     try:
         lightnings_df = pd.read_sql_query(sql, cnxn)
+        lightnings_df['AVG_Amp'] = lightnings_df['AVG_Amp'] / 1000
+        lightnings_df['MAX_Amp'] = lightnings_df['MAX_Amp'] / 1000
+        lightnings_df['SUM_Amp'] = lightnings_df['SUM_Amp'] / 1000
+        
     except pyodbc.Error as err:
         print('Error !!!!! %s' % err)
         return None
@@ -344,7 +348,7 @@ def create_csv_by_time(lightnings_df, info_data):
 #######################################################################################################
 #######################################################################################################
 #######################################################################################################
-def create_kml_by_area(lightnings_df, info_data, file_name_append = ""):
+def create_kml_by_area(lightnings_df, info_data, by_amp_sum = False, file_name_append = ""):
     
     print(f'{info_data["cooperative"]}: {len(lightnings_df)} AREA')
     
@@ -357,22 +361,35 @@ def create_kml_by_area(lightnings_df, info_data, file_name_append = ""):
         kml_style_color.polystyle.color = style_color
         kml_style_color.labelstyle.scale = 0
         return kml_style_color
+
     
-    lightnings_df['AVG_Amp'] = lightnings_df['AVG_Amp'] / 1000
-    lightnings_df['MAX_Amp'] = lightnings_df['MAX_Amp'] / 1000
 
-    max_count = max(lightnings_df.Cantidad)
-    high_factor = 10000.0 / (max_count ** 2)
-    count_levels = (max_count //10, (25*max_count)//100, (5*max_count)//10, (7*max_count)//10)
-    lightnings_df['Category'] = lightnings_df['Cantidad'].apply(
-            lambda x: 4 if x >= count_levels[3] else (3 if x >= count_levels[2] else (
-                2 if x >= count_levels[1] else(1 if x >= count_levels[0] else 0))))
+    ## rectangles by sum of lightning current
+    if by_amp_sum:
+        lightnings_df = lightnings_df.sort_values(by='SUM_Amp', ascending=False)
+        max_count = max(lightnings_df['SUM_Amp'])
+        high_factor = 10000.0 / (max_count ** 2)
+        count_levels = (max_count //10, (25*max_count)//100, (5*max_count)//10, (7*max_count)//10)
 
-    categories = {0: f'Menos de {count_levels[0]} descargas', 
-                    1: f'Entre {count_levels[0]} y {count_levels[1]-1} descargas', 
-                    2: f'Entre {count_levels[1]} y {count_levels[2]-1} descargas', 
-                    3: f'Entre {count_levels[2]} y {count_levels[3]-1} descargas',
-                    4: f'Entre {count_levels[3]} y {max_count} descargas'}
+        lightnings_df['Category'] = lightnings_df['SUM_Amp'].apply(
+                lambda x: 4 if x >= count_levels[3] else (3 if x >= count_levels[2] else (
+                    2 if x >= count_levels[1] else(1 if x >= count_levels[0] else 0))))
+
+    ## rectangles by count of lightnings in the area
+    else:
+        lightnings_df = lightnings_df.sort_values(by='Cantidad', ascending=False)
+        max_count = max(lightnings_df.Cantidad)
+        high_factor = 10000.0 / (max_count ** 2)
+        count_levels = (max_count //10, (25*max_count)//100, (5*max_count)//10, (7*max_count)//10)
+        lightnings_df['Category'] = lightnings_df['Cantidad'].apply(
+        lambda x: 4 if x >= count_levels[3] else (3 if x >= count_levels[2] else (
+            2 if x >= count_levels[1] else(1 if x >= count_levels[0] else 0))))
+    
+    categories = {0: f'Menos de {count_levels[0]}', 
+                    1: f'Entre {count_levels[0]} y {count_levels[1]-1}', 
+                    2: f'Entre {count_levels[1]} y {count_levels[2]-1}', 
+                    3: f'Entre {count_levels[2]} y {count_levels[3]-1}',
+                    4: f'Entre {count_levels[3]} y {max_count}'}
 
     ancho_base = 0.018
     min_height = 1000
@@ -390,17 +407,48 @@ def create_kml_by_area(lightnings_df, info_data, file_name_append = ""):
         category_fol = kml.newfolder(
             name=f'{categories[category]} ({len(category_df)} Areas)')
         for _, row in category_df.iterrows():
-            if info_data['h_3d']:
-                pol_height = high_factor * row["Cantidad"] ** 2 + min_height
+
+            if by_amp_sum:
+                pol_height = high_factor * row["SUM_Amp"] ** 2 + min_height
+                pol = category_fol.newpolygon(name=f'{int(row["SUM_Amp"])} kA', extrude = 1 )
             else:
+                pol_height = high_factor * row["Cantidad"] ** 2 + min_height
+                pol = category_fol.newpolygon(name=f'{int(row["Cantidad"])} descargas', extrude = 1 )
+
+            if not(info_data['h_3d']):
                 pol_height = min_height
-            pol = category_fol.newpolygon(name=f'{int(row["Cantidad"])} descargas', extrude = 1 )
+
             pol.outerboundaryis = [(row['Longitud'] , row['Latitud'], pol_height ),
                                     (row['Longitud'] , row['Latitud'] + ancho_base, pol_height),
                                     (row['Longitud'] + ancho_base, row['Latitud'] + ancho_base, pol_height),
                                     (row['Longitud'] + ancho_base, row['Latitud'], pol_height ),
                                     (row['Longitud'] , row['Latitud'], pol_height )]
-            pol.description = f'Intensidad Promedio: {row["AVG_Amp"]}kA \nIntensidad Maxima: {row["MAX_Amp"]}kA'
+
+            #pol.description = f'Intensidad Promedio: {row["AVG_Amp"]}kA \nIntensidad Maxima: {row["MAX_Amp"]}kA \nSuma de Intensidad: {row["SUM_Amp"]}kA'
+            pol.description = f'''<style>
+.styled-table {{
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 200px;
+}}
+.styled-table tbody tr {{
+    border-bottom: 1px solid #dddddd;
+}}
+.styled-table tbody tr:nth-of-type(even) {{
+    background-color: #e3e3e3;
+}}
+</style>
+<body>
+<TABLE class="styled-table">
+    <TR><TH>Promedio</TH> <TD>{row["AVG_Amp"]}kA</TD></TR>
+    <TR><TH>Maximo</TH> <TD>{row["MAX_Amp"]}kA</TD></TR>
+    <TR><TH>Suma</TH> <TD> {row["SUM_Amp"]}kA</TD></TR>
+    <TR><TH>Cantidad</TH> <TD>{row["Cantidad"]} descargas</TD></TR>
+</TABLE>
+</body>'''
+
             pol.altitudemode = simplekml.AltitudeMode.relativetoground
             if row["Category"] == 4:
                 pol.style = kml_style_color4
