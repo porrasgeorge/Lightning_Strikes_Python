@@ -10,7 +10,6 @@ def generate_reports(end_date):
     delta_day = dt.timedelta(days=1)
     delta_week = dt.timedelta(days=7)
     delta_month = - relativedelta(months=-1)
-    #end_date = dt.date.today()
     initial_date = end_date - delta_day
     base_path = f'\\\\192.168.3.233\\planificacion\\Descargas Atmosfericas'
     #base_path = 'C:\\Lightning_test'
@@ -72,6 +71,3 @@ def generate_reports(end_date):
         lightnings_df = light.lightnings_count_by_area(initial_date, end_date, coop_id, 0)
         light.create_kml_by_area(lightnings_df, info_data, file_name_append="_rectangle")
         light.create_kml_by_area(lightnings_df, info_data, by_amp_sum=True, file_name_append="_energia")
-
-# end_date = dt.date.today()
-# generate_reports(end_date)

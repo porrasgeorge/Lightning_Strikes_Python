@@ -1,1 +1,1 @@
-python generate_files.py
+python run_everyday.py
