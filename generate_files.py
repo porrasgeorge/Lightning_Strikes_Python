@@ -11,7 +11,7 @@ def generate_reports(end_date):
     delta_week = dt.timedelta(days=7)
     delta_month = - relativedelta(months=-1)
     initial_date = end_date - delta_day
-    base_path = f'\\\\192.168.3.233\\planificacion\\Descargas Atmosfericas'
+    base_path = f'\\\\192.168.30.30\\planificacion\\Descargas Atmosfericas'
     #base_path = 'C:\\Lightning_test'
 
     ######################################################################################

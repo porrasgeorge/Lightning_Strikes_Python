@@ -50,7 +50,7 @@ def createPolygons():
         pol.style.linestyle.color = simplekml.Color.red
         pol.style.linestyle.width = 5
         pol.polystyle.fill = 0
-    kml.save('\\\\192.168.3.233\\planificacion\\Descargas Atmosfericas\\Areas y Lineas de transmision.kml')
+    kml.save('\\\\192.168.30.30\\planificacion\\Descargas Atmosfericas\\Areas y Lineas de transmision.kml')
   
 createPolygons()
 

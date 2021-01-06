@@ -99,10 +99,8 @@ def kml_point_styles():
         kml_style_pol_99 = simplekml.Style()
         kml_style_pos.labelstyle.scale = 0
         kml_style_neg.labelstyle.scale = 0
-        kml_style_pos.iconstyle.icon.href = 'http://maps.google.com/mapfiles/kml/paddle/wht-circle.png'
-        kml_style_neg.iconstyle.icon.href = 'http://maps.google.com/mapfiles/kml/paddle/wht-blank.png'
-        kml_style_pos.iconstyle.color = icon_color
-        kml_style_neg.iconstyle.color = icon_color
+        kml_style_pos.iconstyle.scale = 1.5
+        kml_style_neg.iconstyle.scale = 1.5
         kml_style_pos.balloonstyle.bgcolor = ballon_color
         kml_style_neg.balloonstyle.bgcolor = ballon_color
         kml_style_pol_50.linestyle.width = 3
@@ -110,6 +108,26 @@ def kml_point_styles():
         kml_style_pol_99.linestyle.width = 6
         kml_style_pol_99.linestyle.color = icon_color
         kml_styles.append([kml_style_neg, kml_style_pos, kml_style_pol_50, kml_style_pol_99])
+    kml_styles[0][0].iconstyle.icon.href = 'icons/bolt_white.png'
+    kml_styles[0][1].iconstyle.icon.href = 'icons/bolt_white_up.png'
+    kml_styles[1][0].iconstyle.icon.href = 'icons/bolt_purple.png'
+    kml_styles[1][1].iconstyle.icon.href = 'icons/bolt_purple_up.png'
+    kml_styles[2][0].iconstyle.icon.href = 'icons/bolt_blue.png'
+    kml_styles[2][1].iconstyle.icon.href = 'icons/bolt_blue_up.png'
+    kml_styles[3][0].iconstyle.icon.href = 'icons/bolt_gray.png'
+    kml_styles[3][1].iconstyle.icon.href = 'icons/bolt_gray_up.png'
+    kml_styles[4][0].iconstyle.icon.href = 'icons/bolt_yellowgreen.png'
+    kml_styles[4][1].iconstyle.icon.href = 'icons/bolt_yellowgreen_up.png'
+    kml_styles[5][0].iconstyle.icon.href = 'icons/bolt_yellow.png'
+    kml_styles[5][1].iconstyle.icon.href = 'icons/bolt_yellow_up.png'
+    kml_styles[6][0].iconstyle.icon.href = 'icons/bolt_orange.png'
+    kml_styles[6][1].iconstyle.icon.href = 'icons/bolt_orange_up.png'
+    kml_styles[7][0].iconstyle.icon.href = 'icons/bolt_coral.png'
+    kml_styles[7][1].iconstyle.icon.href = 'icons/bolt_coral_up.png'
+    kml_styles[8][0].iconstyle.icon.href = 'icons/bolt_red.png'
+    kml_styles[8][1].iconstyle.icon.href = 'icons/bolt_red_up.png'
+    
+    
     return kml_styles
 
 
@@ -138,7 +156,10 @@ def ellipse_polygon(longitude, latitude, major_err, minor_err, azimuth, probabil
     hor_km_to_degrees_ratio = vert_km_to_degrees_ratio / abs(math.cos(math.radians(latitude)))
 
     ## creating the ellipse
-    angle = np.arange(0.0, 2*math.pi + STEP, STEP)
+    # angle = np.arange(0.0, 2*math.pi + STEP, STEP)
+    angles_degrees = list(range(0, 90, 10)) + list(range(90, 110, 2)) ##+ list(range(110, 260, 10)) + list(range(260, 280, 2)) + list(range(280, 370, 10))
+    angle = np.radians(angles_degrees)
+
     R = a*b/(np.sqrt(np.power(a*np.cos(angle),2)+np.power(b*np.sin(angle),2)))
     new_angle = angle - math.radians(azimuth)
 
@@ -245,14 +266,14 @@ def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
 </TABLE>
 </body>'''
                 
-    full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%m-%B")}\\{info_data["cooperative"]}'
+    full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%Y_%m")}\\{info_data["cooperative"]}'
     Path(full_path).mkdir(parents=True, exist_ok=True)
     if add_error_ellipses:
-        kml.save(
-            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_porFecha (Elipses).kml')
+        kml.savekmz(
+            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_porFecha (Elipses).kmz')
     else:
-        kml.save(
-            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_porFecha.kml')
+        kml.savekmz(
+            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_porFecha.kmz')
 
 
 #######################################################################################################
@@ -319,10 +340,10 @@ def create_kml_by_amplitude(lightnings_df, info_data):
 </TABLE>
 </body>'''
 
-    full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%m-%B")}\\{info_data["cooperative"]}'
+    full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%Y_%m")}\\{info_data["cooperative"]}'
     Path(full_path).mkdir(parents=True, exist_ok=True)
-    kml.save(
-        f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_por_Amplitud.kml')
+    kml.savekmz(
+        f'{full_path}\\{info_data["cooperative"]}_{info_data["date"]}_por_Amplitud.kmz')
 
 
 # #######################################################################################################
@@ -336,7 +357,7 @@ def create_csv_by_time(lightnings_df, info_data):
 
     print(f'{info_data["cooperative"]}: {len(lightnings_df)} CSV')
 
-    full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%m-%B")}\\{info_data["cooperative"]}'
+    full_path = f'{info_data["base_path"]}\\{info_data["date"].strftime("%Y_%m")}\\{info_data["cooperative"]}'
     #path_to_file = "kml"
     Path(full_path).mkdir(parents=True, exist_ok=True)
     lightnings_df.to_excel(
@@ -464,13 +485,13 @@ def create_kml_by_area(lightnings_df, info_data, by_amp_sum = False, file_name_a
     if (info_data['period'] == 'week'):
         full_path = f'{info_data["base_path"]}\\semanal'
         Path(full_path).mkdir(parents=True, exist_ok=True)
-        kml.save(
-            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%Y-%m-%d")}{file_name_append}.kml')
+        kml.savekmz(
+            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%Y-%m-%d")}{file_name_append}.kmz')
     else:
         full_path = f'{info_data["base_path"]}\\mensual'
         Path(full_path).mkdir(parents=True, exist_ok=True)
-        kml.save(
-            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%Y-%B")}{file_name_append}.kml')
+        kml.savekmz(
+            f'{full_path}\\{info_data["cooperative"]}_{info_data["date"].strftime("%Y-%B")}{file_name_append}.kmz')
 
 #######################################################################################################
 #######################################################################################################
@@ -558,7 +579,7 @@ def create_kml_live_data():
     initial_date_report1 = end_date - delta_time_report1
     initial_date_report2 = end_date - delta_time_report2
 
-    full_path = f'\\\\192.168.3.233\\Public\\Lightnings'
+    full_path = f'\\\\192.168.30.30\\Public\\Lightnings'
     coop_id = 5
     
     lightnings_df = read_lightnings(initial_date_report1, coop_id)
@@ -576,7 +597,7 @@ def create_kml_live_data():
         point.style.iconstyle.icon.href = 'http://maps.google.com/mapfiles/kml/shapes/info.png'
         point.style.labelstyle.scale = 3
         point.style.labelstyle.color = simplekml.Color.red
-    kml.save(f'{full_path}\\Conelectricas_4hours.kml')
+    kml.savekmz(f'{full_path}\\Conelectricas_4hours.kmz')
 
     lightnings_df2 = lightnings_df[lightnings_df['Fecha_Hora'] >= initial_date_report2].copy(deep=True)
     if len(lightnings_df2) != 0:
@@ -589,6 +610,6 @@ def create_kml_live_data():
         point.style.iconstyle.icon.href = 'http://maps.google.com/mapfiles/kml/shapes/info.png'
         point.style.labelstyle.scale = 3
         point.style.labelstyle.color = simplekml.Color.red
-    kml2.save(f'{full_path}\\Conelectricas_30minutes.kml')
+    kml2.savekmz(f'{full_path}\\Conelectricas_30minutes.kmz')
 
   
