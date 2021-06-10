@@ -156,9 +156,9 @@ def ellipse_polygon(longitude, latitude, major_err, minor_err, azimuth, probabil
     hor_km_to_degrees_ratio = vert_km_to_degrees_ratio / abs(math.cos(math.radians(latitude)))
 
     ## creating the ellipse
-    # angle = np.arange(0.0, 2*math.pi + STEP, STEP)
-    angles_degrees = list(range(0, 90, 10)) + list(range(90, 110, 2)) ##+ list(range(110, 260, 10)) + list(range(260, 280, 2)) + list(range(280, 370, 10))
-    angle = np.radians(angles_degrees)
+    angle = np.arange(0.0, 2*math.pi + STEP, STEP)
+    #angles_degrees = list(range(0, 90, 10)) + list(range(90, 110, 2)) ##+ list(range(110, 260, 10)) + list(range(260, 280, 2)) + list(range(280, 370, 10))
+    #angle = np.radians(angles_degrees)
 
     R = a*b/(np.sqrt(np.power(a*np.cos(angle),2)+np.power(b*np.sin(angle),2)))
     new_angle = angle - math.radians(azimuth)
@@ -229,8 +229,8 @@ def create_kml_by_time(lightnings_df, info_data, add_error_ellipses = False):
                     ##ellipse_50.timespan.end = (row['Fecha_Hora']+datetime.timedelta(minutes=30)).isoformat()
 
                     ellipse_99 = ellipse_fol.newpolygon(
-                        name=f'{row["Fecha_Hora"].strftime("%Y/%m/%d %H:%M:%S")} 99%')
-                    ellipse_99.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"], probability = 2)
+                        name=f'{row["Fecha_Hora"].strftime("%Y/%m/%d %H:%M:%S")} 90%')
+                    ellipse_99.outerboundaryis = ellipse_polygon(row['Longitud'], row['Latitud'], row["Error_Mayor"], row["Error_Minor"], row["Error_Azimuth"], probability = 1)
                     ellipse_99.style = kml_styles[row["Category_ABS"]][3]
                     ellipse_99.polystyle = ellipse_polystyle
                     ellipse_99.visibility = 0
