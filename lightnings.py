@@ -499,20 +499,20 @@ def create_kml_by_area(lightnings_df, info_data, by_amp_sum = False, file_name_a
 def create_kml_live_data():
     def kml_create(lightnings_df):
         kml_style_red = simplekml.Style()
-        kml_style_red.iconstyle.icon.href = 'icons/bolt.png'
+        kml_style_red.iconstyle.icon.href = 'icons/bolt_red.png'
         kml_style_red.iconstyle.scale = 2
         kml_style_red.labelstyle.scale = 0
-        kml_style_red.iconstyle.color = simplekml.Color.red
+        ## kml_style_red.iconstyle.color = simplekml.Color.red
         kml_style_yellow = simplekml.Style()
-        kml_style_yellow.iconstyle.icon.href = 'icons/bolt.png'
+        kml_style_yellow.iconstyle.icon.href = 'icons/bolt_yellow.png'
         kml_style_yellow.iconstyle.scale = 1.5
         kml_style_yellow.labelstyle.scale = 0
-        kml_style_yellow.iconstyle.color = simplekml.Color.yellow
+        #kml_style_yellow.iconstyle.color = simplekml.Color.yellow
         kml_style_highlighted = simplekml.Style()
-        kml_style_highlighted.iconstyle.icon.href = 'icons/bolt.png'
+        kml_style_highlighted.iconstyle.icon.href = 'icons/bolt_orange.png'
         kml_style_highlighted.iconstyle.scale = 2.5
         kml_style_highlighted.labelstyle.scale = 1.5
-        kml_style_highlighted.iconstyle.color = simplekml.Color.orange
+        #kml_style_highlighted.iconstyle.color = simplekml.Color.orange
         ellipse_style_red = simplekml.Style()
         ellipse_style_red.linestyle.width = 3
         ellipse_style_red.linestyle.color = simplekml.Color.red
