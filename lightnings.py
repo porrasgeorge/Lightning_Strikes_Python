@@ -299,13 +299,14 @@ def create_kml_by_amplitude(lightnings_df, info_data):
         lambda x: 1 if x >= 0 else 0)
 
     categories = {0: 'Menos de 20kA', 1: 'Entre 20kA y 40kA', 2: 'Entre 40kA y 60kA', 3: 'Entre 60kA y 80kA',
-                  4: 'Entre 80kA y 120kA', 5: 'Entre 120kA y 200kA', 6: 'Entre 200kA y 300kA', 7: 'Mas de 300kA'}
+                  4: 'Entre 80kA y 120kA', 5: 'Entre 120kA y 200kA', 6: 'Entre 200kA y 300kA', 7: 'Entre 300kA y 400kA', 8: 'más de 400kA'}
 
     print(f'{info_data["cooperative"]}: {len(lightnings_df)} AMPLITUDE')
     
     kml_styles = kml_point_styles()
     kml = simplekml.Kml()
     unique_categories = lightnings_df.Category_ABS.unique()
+    
     for category in unique_categories:
         category_df = lightnings_df[lightnings_df.Category_ABS == category]
         category_fol = kml.newfolder(
