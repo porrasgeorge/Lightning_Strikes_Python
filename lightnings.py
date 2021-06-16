@@ -584,7 +584,7 @@ def create_kml_live_data():
     coop_id = 5
     
     lightnings_df = read_lightnings(initial_date_report1, coop_id)
-    print(f'descargas: {len(lightnings_df)} LIVE DATA')
+    print(f'descargas 4hr: {len(lightnings_df)} LIVE DATA')
     if len(lightnings_df) != 0:
         lightnings_df = lightnings_df.sort_values(by='Fecha_Hora', ascending=True)
         lightnings_df['Intensity'] = lightnings_df['Intensity'] / 1000
@@ -601,6 +601,7 @@ def create_kml_live_data():
     kml.savekmz(f'{full_path}\\Conelectricas_4hours.kmz')
 
     lightnings_df2 = lightnings_df[lightnings_df['Fecha_Hora'] >= initial_date_report2].copy(deep=True)
+    print(f'descargas 30min: {len(lightnings_df2)} LIVE DATA')
     if len(lightnings_df2) != 0:
         lightnings_df2['Category'] = (end_date - lightnings_df2['Fecha_Hora']) <= datetime.timedelta(minutes=10)
         kml2 = kml_create(lightnings_df2)

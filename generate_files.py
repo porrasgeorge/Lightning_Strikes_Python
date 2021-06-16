@@ -71,3 +71,33 @@ def generate_reports(end_date):
         lightnings_df = light.lightnings_count_by_area(initial_date, end_date, coop_id, 0)
         light.create_kml_by_area(lightnings_df, info_data, file_name_append="_rectangle")
         light.create_kml_by_area(lightnings_df, info_data, by_amp_sum=True, file_name_append="_energia")
+    
+
+def generate_reports2(end_date):
+    lines = { 24: 'Linea 69', 25: 'Pocosol', 26: 'Linea Canalete' }
+    delta_day = dt.timedelta(days=1)
+    delta_week = dt.timedelta(days=7)
+    delta_month = - relativedelta(months=-1)
+    initial_date = end_date - delta_day
+    #base_path = f'\\\\192.168.30.30\\planificacion\\Descargas Atmosfericas'
+    base_path = 'C:\\Lightning_test'
+
+    ######################################################################################
+    ## reportes diarios
+    print(f'\n\nfecha: {initial_date}')
+    for coop_id in lines.keys():
+        info_data = {
+                'cooperative': lines[coop_id],
+                'date': initial_date,
+                'base_path': base_path}
+
+        lightning_df = light.read_lightnings(initial_date, coop_id)
+        print(lightning_df)
+
+        # ## for all cases
+        # light.create_kml_by_time(lightning_df, info_data)
+        # light.create_csv_by_time(lightning_df, info_data)
+        # ## for all cases but Conelectricas
+        # if coop_id <5:
+        #     light.create_kml_by_time(lightning_df, info_data, True)
+        #     light.create_kml_by_amplitude(lightning_df, info_data) 
