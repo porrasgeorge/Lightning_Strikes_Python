@@ -580,7 +580,7 @@ def create_kml_live_data():
     initial_date_report1 = end_date - delta_time_report1
     initial_date_report2 = end_date - delta_time_report2
 
-    full_path = f'\\\\192.168.30.30\\Public\\Lightnings'
+    full_path = f'\\\\192.168.15.15\\Public\\Lightnings'
     coop_id = 5
     
     lightnings_df = read_lightnings(initial_date_report1, coop_id)

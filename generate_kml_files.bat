@@ -1,2 +1,1 @@
-cd "C:\\API_Lightnings"
-python run_everyday.py
+D:\Python\API_Lightnings\.venv\Scripts\activate && python D:\Python\API_Lightnings\run_everyday.py

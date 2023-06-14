@@ -1,2 +1,1 @@
-cd "C:\\API_Lightnings"
-python Lightning_API.py
+D:\Python\API_Lightnings\.venv\Scripts\activate && python D:\Python\API_Lightnings\Lightning_API.py
